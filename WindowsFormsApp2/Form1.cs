@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.IO;
@@ -21,14 +21,13 @@ namespace WindowsFormsApp2
             this.dataGridView1.CellContentClick += new DataGridViewCellEventHandler(this.dataGridView1_CellContentClick);
             this.dataGridView1.CellClick += new DataGridViewCellEventHandler(this.dataGridView1_CellClick);
             this.dataGridView1.DataError += DataGridView1_DataError;
-
-            // Anlık arama için Kitap Adı metin kutusunun TextChanged olayını dinliyoruz.
+            
             this.Kitapad.TextChanged += new System.EventHandler(this.Kitapad_TextChanged);
         }
 
         private void DataGridView1_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            e.ThrowException = false; // Hataları görmezden gel
+            e.ThrowException = false; 
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -59,26 +58,20 @@ namespace WindowsFormsApp2
                 {
                     command.ExecuteNonQuery();
                 }
-                LoadBooksFromDatabase(); // Uygulama başladığında tüm kitapları yükle
+                LoadBooksFromDatabase(); 
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Veritabanı bağlantı hatası: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        /// <summary>
-        /// Veritabanından kitapları yükler ve DataGridView'e bağlar.
-        /// İsteğe bağlı olarak bir arama terimiyle filtreleme yapabilir.
-        /// </summary>
-        /// <param name="searchTerm">Kitap adında aranacak metin. Null veya boş ise tüm kitaplar yüklenir.</param>
+        
         private void LoadBooksFromDatabase(string searchTerm = null)
         {
             try
             {
                 string selectQuery = "SELECT id, kitap_adi, yazar, sayfa_sayisi, baslangic_tarihi, bitis_tarihi, ortalama_sayfa, kapak_fotografi_yolu FROM kitaplar";
 
-                // Eğer arama terimi varsa, SQL sorgusuna filtre ekle
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     selectQuery += " WHERE kitap_adi LIKE @searchTerm";
@@ -88,7 +81,6 @@ namespace WindowsFormsApp2
                 {
                     if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        // Arama terimini LIKE sorgusu için uygun hale getir (başında ve sonunda % işareti)
                         command.Parameters.AddWithValue("@searchTerm", $"%{searchTerm}%");
                     }
 
@@ -96,7 +88,6 @@ namespace WindowsFormsApp2
                     SQLiteDataAdapter dataAdapter = new SQLiteDataAdapter(command);
                     dataAdapter.Fill(dataTable);
 
-                    // Mevcut sütunları sil ve yeni sütunları ekle
                     dataGridView1.Columns.Clear();
                     dataGridView1.AutoGenerateColumns = false;
 
@@ -141,33 +132,25 @@ namespace WindowsFormsApp2
             }
         }
 
-        /// <summary>
-        /// Arama metin kutusundaki değişiklikleri dinler ve anında arama yapar.
-        /// </summary>
+        
         private void Kitapad_TextChanged(object sender, EventArgs e)
         {
-            // Metin kutusundaki değeri alarak LoadBooksFromDatabase metodunu çağır
             LoadBooksFromDatabase(Kitapad.Text);
         }
-
-        /// <summary>
-        /// Ortalama sayfa sayısını hesaplayan yardımcı metot.
-        /// </summary>
+        
         private double CalculateAveragePages(DateTime baslangicTarihi, DateTime? bitisTarihi, int sayfaSayisi)
         {
             if (!bitisTarihi.HasValue)
             {
-                return 0; // Bitiş tarihi yoksa ortalama sayfa sayısı 0'dır
-            }
+                return 0; 
+                }
 
             TimeSpan fark = bitisTarihi.Value - baslangicTarihi;
-            // Başlangıç ve bitiş tarihlerini kapsayan gün sayısını bulmak için +1 eklenir.
+
             int gunSayisi = (int)fark.TotalDays + 1;
 
             if (gunSayisi <= 0)
             {
-                // Fark 0 veya negatifse (örneğin başlangıç bitişten sonraysa)
-                // en az 1 gün okunduğunu varsayıyoruz.
                 gunSayisi = 1;
             }
             return (double)sayfaSayisi / gunSayisi;
@@ -229,7 +212,7 @@ namespace WindowsFormsApp2
                 }
 
                 MessageBox.Show("Kitap başarıyla eklendi!", "Başarılı");
-                LoadBooksFromDatabase(); // Tabloyu yenile
+                LoadBooksFromDatabase(); 
             }
             catch (Exception ex)
             {
@@ -256,21 +239,18 @@ namespace WindowsFormsApp2
                 string kitapAdi = Kitapad.Text;
                 string yazar = Yazar2.Text;
 
-                // Sayfa sayısı için kontroller
                 if (!int.TryParse(sayfa.Text, out int sayfaSayisi))
                 {
                     MessageBox.Show("Sayfa Sayısı sadece rakamlardan oluşmalıdır.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                // Başlangıç tarihi için kontroller
                 if (!DateTime.TryParse(bastarih.Text, out DateTime baslangicTarihi))
                 {
                     MessageBox.Show("Başlangıç Tarihi geçerli bir formatta değil.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                // Bitiş tarihi için kontroller
                 DateTime? bitisTarihi = null;
                 if (!string.IsNullOrWhiteSpace(bitarih.Text))
                 {
@@ -280,7 +260,6 @@ namespace WindowsFormsApp2
                     }
                 }
 
-                // Ortalama sayfa sayısını yeniden hesapla
                 double ortalamaSayfa = CalculateAveragePages(baslangicTarihi, bitisTarihi, sayfaSayisi);
 
                 string updateQuery = @"
@@ -310,16 +289,11 @@ namespace WindowsFormsApp2
                 MessageBox.Show("Güncelleme sırasında bir hata oluştu: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        /// <summary>
-        /// Veritabanındaki tüm kitapların ortalama sayfa sayısını yeniden hesaplar ve günceller.
-        /// Bu metot, eski hatalı verilerin düzeltilmesi için bir kerelik çalıştırılabilir.
-        /// </summary>
+        
         private void RecalculateAllAverages()
         {
             try
             {
-                // Tüm kitapları çek
                 string selectAllQuery = "SELECT id, sayfa_sayisi, baslangic_tarihi, bitis_tarihi FROM kitaplar";
                 DataTable allBooksTable = new DataTable();
                 using (var command = new SQLiteCommand(selectAllQuery, connection))
@@ -345,7 +319,6 @@ namespace WindowsFormsApp2
                                 bitisTarihi = DateTime.Parse(row["bitis_tarihi"].ToString());
                             }
 
-                            // Ortalama sayfa sayısını yeniden hesapla
                             double ortalamaSayfa = CalculateAveragePages(baslangicTarihi, bitisTarihi, sayfaSayisi);
 
                             command.Parameters.Clear();
@@ -436,7 +409,6 @@ namespace WindowsFormsApp2
                 {
                     try
                     {
-                        // Kilitlenme sorununu önlemek için resmin bir kopyasını oluşturuyoruz
                         using (Image img = Image.FromFile(kapakFotografiYolu))
                         {
                             pbKapakFotografi.Image = new Bitmap(img);
@@ -470,7 +442,6 @@ namespace WindowsFormsApp2
                     }
                     else
                     {
-                        // Kilitlenme sorununu önlemek için resmin bir kopyasını oluşturuyoruz
                         using (Image img = Image.FromFile(filePath))
                         {
                             e.Value = new Bitmap(img);
@@ -484,12 +455,10 @@ namespace WindowsFormsApp2
                     e.FormattingApplied = true;
                 }
             }
-            // Sadece ortalama sayfa sütununu formatla
             if (dataGridView1.Columns.Contains("ortalama_sayfa") && e.ColumnIndex == dataGridView1.Columns["ortalama_sayfa"].Index)
             {
                 if (e.Value != null && e.Value is double)
                 {
-                    // Değeri virgülden sonra 2 haneli olarak ayarlama kısmı
                     e.Value = ((double)e.Value).ToString("N2", CultureInfo.CurrentCulture);
                     e.FormattingApplied = true;
                 }
@@ -534,7 +503,7 @@ namespace WindowsFormsApp2
                                 }
                             }
                         }
-                        LoadBooksFromDatabase(); // Tabloyu yenile
+                        LoadBooksFromDatabase(); 
                     }
                     catch (Exception ex)
                     {
@@ -552,19 +521,16 @@ namespace WindowsFormsApp2
         {
             LoadBooksFromDatabase(Kitapad.Text);
         }
-
-        // Yeni eklediğiniz butona çift tıklayarak bu metodu oluşturabilirsiniz.
+        
         private void btnTümunuHesapla_Click(object sender, EventArgs e)
         {
             RecalculateAllAverages();
-            LoadBooksFromDatabase(); // İşlem bitince tabloyu yenilemeyi unutmayalım.
+            LoadBooksFromDatabase();
         }
 
         private void KitapSayfaHesap_Click(object sender, EventArgs e)
         {
-            // Tüm kitapların ortalama sayfa sayısını yeniden hesapla
             RecalculateAllAverages();
-            // Veritabanından kitapları yeniden yükleyerek tabloyu güncelle
             LoadBooksFromDatabase();
         }
     }
